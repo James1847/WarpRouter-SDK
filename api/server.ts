@@ -83,6 +83,7 @@ app.get('/quote', async (req, res) => {
         console.log(`  - ${q.dex}: AmountOut -> ${q.amountOut}, Gas -> ${q.gasEstimate.toString()}`);
     });
 
+
     const bestQuote = validQuotes.reduce((best, current) => {
       if (parseFloat(current.amountOut) > parseFloat(best.amountOut)) {
         return current;
