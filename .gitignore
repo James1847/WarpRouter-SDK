@@ -1,0 +1,24 @@
+# Dependencies
+/node_modules
+
+# Build output
+/dist
+
+# Environment variables
+.env
+
+# Hardhat cache and artifacts
+/cache
+/artifacts
+
+# Test coverage
+/coverage
+coverage.json
+
+# OS-specific
+.DS_Store
+
+# IDE-specific
+.idea
+.vscode/settings.json
+
