@@ -7,6 +7,14 @@ import { JsonRpcProvider, ethers } from 'ethers';
 
 dotenv.config();
 
+const tokenAddressMap: { [symbol: string]: string } = {
+    'ETH': '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH Address
+    'DAI': '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    'USDC': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    'USDT': '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    'LINK': '0x514910771AF9Ca656af840dff83E8264EcF986CA'
+  };
+
 const program = new Command();
 
 program
@@ -32,13 +40,16 @@ program
     console.log(`Fetching best quote for ${amountIn} ${tokenIn} -> ${tokenOut}...`);
 
     try {
+      const tokenInAddress = tokenAddressMap[tokenIn.toUpperCase()] || tokenIn;
+      const tokenOutAddress = tokenAddressMap[tokenOut.toUpperCase()] || tokenOut;
+
       // A more robust solution would dynamically fetch decimals for the input token
       const amountInWei = ethers.parseUnits(amountIn, 18).toString();
 
       const bestQuote = await BestRouteRouter.getBestQuote(routers, {
         amountIn: amountInWei,
-        tokenIn: tokenIn,
-        tokenOut: tokenOut,
+        tokenIn: tokenInAddress,
+        tokenOut: tokenOutAddress,
       });
 
       if (!bestQuote) {
