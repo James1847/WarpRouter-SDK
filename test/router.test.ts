@@ -19,7 +19,7 @@ describe("BestRouteRouter on a forked mainnet", () => {
 
   it("should get a quote for ETH to DAI", async () => {
     const options = {
-      amountIn: "1",
+      amountIn: ethers.parseEther("1").toString(),
       tokenIn: "ETH",
       tokenOut: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // DAI
     };
@@ -40,12 +40,12 @@ describe("BestRouteRouter on a forked mainnet", () => {
     for (let i = 0; i < 5; i++) { // Run 5 iterations for the fuzz test
       const randomAmount = (Math.random() * (10 - 0.01) + 0.01).toFixed(4);
       const options = {
-        amountIn: randomAmount.toString(),
+        amountIn: ethers.parseEther(randomAmount).toString(),
         tokenIn: "ETH",
         tokenOut: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // DAI
       };
 
-      console.log(`Fuzz test #${i + 1}: Quoting for ${options.amountIn} ETH...`);
+      console.log(`Fuzz test #${i + 1}: Quoting for ${randomAmount} ETH...`);
 
       const bestQuote = await BestRouteRouter.getBestQuote(routers, options);
 
@@ -56,7 +56,7 @@ describe("BestRouteRouter on a forked mainnet", () => {
       expect(bestQuote!.gasEstimate).to.be.a('bigint');
       expect(bestQuote!.gasEstimate > 0n).to.be.true;
 
-      console.log(`  -> ${options.amountIn} ETH -> ${bestQuote!.amountOut} DAI via ${bestQuote!.dex} (Gas: ${bestQuote!.gasEstimate})`);
+      console.log(`  -> ${randomAmount} ETH -> ${bestQuote!.amountOut} DAI via ${bestQuote!.dex} (Gas: ${bestQuote!.gasEstimate})`);
     }
   }).timeout(60000); // Increase timeout for multiple async calls
 });

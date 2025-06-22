@@ -1,19 +1,9 @@
 version: '3.8'
 services:
-  api:
+  app:
     build: .
     ports:
       - "3000:3000"
-    environment:
-      - RPC_URL=http://hardhat-node:8545
-    depends_on:
-      - hardhat-node
+    env_file:
+      - .env
 
-  hardhat-node:
-    image: "node:18"
-    working_dir: /app
-    command: npx hardhat node --hostname 0.0.0.0
-    ports:
-      - "8545:8545"
-    volumes:
-      - .:/app
