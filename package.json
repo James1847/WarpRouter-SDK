@@ -8,7 +8,7 @@
     "start": "node -r dotenv/config dist/api/server.js",
     "test": "hardhat test",
     "lint": "eslint . --ext .ts",
-    "cli": "ts-node src/cli/index.ts"
+    "cli": "ts-node cli/index.ts"
   },
   "keywords": [
     "defi",

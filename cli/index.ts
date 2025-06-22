@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { BestRouteRouter } from '../router/BestRouteRouter';
 import { UniswapV3Router } from '../sdk/UniswapV3Router';
 import { SushiswapV2Router } from '../sdk/SushiswapV2Router';
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, ethers } from 'ethers';
 
 dotenv.config();
 
@@ -12,16 +12,12 @@ const program = new Command();
 program
   .name('warp-router-cli')
   .description('CLI to interact with the WarpRouter SDK')
-  .version('1.0.0');
-
-program
-  .command('quote')
-  .description('Get the best quote for a token swap')
-  .argument('<tokenIn>', 'Input token symbol or address (e.g., ETH)')
-  .argument('<tokenOut>', 'Output token address')
-  .requiredOption('-a, --amount <number>', 'Amount of the input token to swap')
-  .action(async (tokenIn, tokenOut, options) => {
-    const { amount } = options;
+  .version('1.0.0')
+  .requiredOption('--amountIn <number>', 'Amount of the input token to swap')
+  .requiredOption('--tokenIn <string>', 'Input token symbol or address (e.g., ETH)')
+  .requiredOption('--tokenOut <string>', 'Output token address')
+  .action(async (options) => {
+    const { amountIn, tokenIn, tokenOut } = options;
 
     if (!process.env.RPC_URL) {
       console.error('Error: RPC_URL is not set. Please create a .env file with your QuickNode RPC URL.');
@@ -33,11 +29,14 @@ program
     const sushiswapRouter = new SushiswapV2Router(provider);
     const routers = [uniswapRouter, sushiswapRouter];
 
-    console.log(`Fetching best quote for ${amount} ${tokenIn} -> ${tokenOut}...`);
+    console.log(`Fetching best quote for ${amountIn} ${tokenIn} -> ${tokenOut}...`);
 
     try {
+      // A more robust solution would dynamically fetch decimals for the input token
+      const amountInWei = ethers.parseUnits(amountIn, 18).toString();
+
       const bestQuote = await BestRouteRouter.getBestQuote(routers, {
-        amountIn: amount,
+        amountIn: amountInWei,
         tokenIn: tokenIn,
         tokenOut: tokenOut,
       });
@@ -47,10 +46,13 @@ program
         return;
       }
 
+      // A more robust solution would dynamically fetch decimals for the output token
+      const formattedAmountOut = ethers.formatUnits(bestQuote.amountOut, 18);
+
       console.log('Best Route:', bestQuote.dex);
-      console.log('Amount Out:', bestQuote.amountOut);
-      console.log('Gas:', bestQuote.gasEstimate); // Placeholder
-      console.log('Tx Calldata:', bestQuote.calldata); // Placeholder
+      console.log('Amount Out:', formattedAmountOut);
+      console.log('Gas:', bestQuote.gasEstimate.toString());
+      console.log('Tx Calldata:', bestQuote.calldata);
     } catch (error) {
       console.error('An error occurred while fetching quotes:', error);
     }
