@@ -2,6 +2,8 @@ import { DexQuote, DexRouter } from "../sdk/types";
 import { ChainlinkPriceOracle } from "../sdk/ChainlinkPriceOracle";
 import { ethers } from "ethers";
 
+const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+
 interface QuoteOptions {
   amountIn: string;
   tokenIn: string;
@@ -14,9 +16,22 @@ export class BestRouteRouter {
   static async getBestQuote(routers: DexRouter[], options: QuoteOptions): Promise<DexQuote | null> {
     const { amountIn, tokenIn, tokenOut, maxSlippagePct, provider } = options;
 
+    const tokenInAddress = tokenIn.toUpperCase() === "ETH" ? WETH_ADDRESS : tokenIn;
+    const tokenOutAddress = tokenOut.toUpperCase() === "ETH" ? WETH_ADDRESS : tokenOut;
+
     const quotes = await Promise.all(
-      routers.map(router => router.quoteExactIn(amountIn, tokenIn, tokenOut))
+      routers.map(router => router.quoteExactIn(amountIn, tokenInAddress, tokenOutAddress))
     );
+
+    console.log("\n--- All Quotes from Routers ---");
+    quotes.forEach(q => {
+      if (q) {
+        console.log(`  - ${q.dex}: AmountOut -> ${q.amountOut}`);
+      } else {
+        console.log("  - One router returned a null quote.");
+      }
+    });
+    console.log("---------------------------------");
 
     let validQuotes = quotes.filter(q => q !== null && parseFloat(q.amountOut) > 0);
 
@@ -27,7 +42,7 @@ export class BestRouteRouter {
     // Simple comparison: choose the route with the highest amountOut.
     // The more advanced gas-cost-based comparison can be re-implemented later.
     let bestQuote = validQuotes.reduce((best, current) => {
-      if (parseFloat(current.amountOut) > parseFloat(best.amountOut)) {
+      if (BigInt(current.amountOut) > BigInt(best.amountOut)) {
         return current;
       }
       return best;
@@ -73,7 +88,7 @@ export class BestRouteRouter {
         }
 
         bestQuote = validQuotes.reduce((best, current) => {
-            if (parseFloat(current.amountOut) > parseFloat(best.amountOut)) {
+            if (BigInt(current.amountOut) > BigInt(best.amountOut)) {
                 return current;
             }
             return best;

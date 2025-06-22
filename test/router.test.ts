@@ -29,11 +29,13 @@ describe("BestRouteRouter on a forked mainnet", () => {
     expect(bestQuote).to.not.be.null;
     expect(bestQuote).to.have.property('dex');
     expect(bestQuote).to.have.property('amountOut');
-    expect(parseFloat(bestQuote!.amountOut)).to.be.greaterThan(0);
+
+    const formattedAmountOut = ethers.formatUnits(bestQuote!.amountOut, 18); // Assuming 18 decimals for DAI
+    console.log(`1 ETH -> ${formattedAmountOut} DAI via ${bestQuote!.dex} (Gas: ${bestQuote!.gasEstimate})`);
+
+    expect(parseFloat(formattedAmountOut)).to.be.greaterThan(0);
     expect(bestQuote!.gasEstimate).to.be.a('bigint');
     expect(bestQuote!.gasEstimate > 0n).to.be.true;
-
-    console.log(`1 ETH -> ${bestQuote!.amountOut} DAI via ${bestQuote!.dex} (Gas: ${bestQuote!.gasEstimate})`);
   });
 
   it("should handle various random amounts for ETH to DAI (Fuzz Test)", async () => {
@@ -52,11 +54,13 @@ describe("BestRouteRouter on a forked mainnet", () => {
       expect(bestQuote).to.not.be.null;
       expect(bestQuote).to.have.property('dex');
       expect(bestQuote).to.have.property('amountOut');
-      expect(parseFloat(bestQuote!.amountOut)).to.be.greaterThan(0);
+
+      const formattedAmountOut = ethers.formatUnits(bestQuote!.amountOut, 18); // Assuming 18 decimals for DAI
+      console.log(`  -> ${randomAmount} ETH -> ${formattedAmountOut} DAI via ${bestQuote!.dex} (Gas: ${bestQuote!.gasEstimate})`);
+
+      expect(parseFloat(formattedAmountOut)).to.be.greaterThan(0);
       expect(bestQuote!.gasEstimate).to.be.a('bigint');
       expect(bestQuote!.gasEstimate > 0n).to.be.true;
-
-      console.log(`  -> ${randomAmount} ETH -> ${bestQuote!.amountOut} DAI via ${bestQuote!.dex} (Gas: ${bestQuote!.gasEstimate})`);
     }
   }).timeout(60000); // Increase timeout for multiple async calls
 });
