@@ -1,8 +1,8 @@
-import { Contract, JsonRpcProvider, Interface, parseEther, formatUnits } from "ethers";
+import { Contract, JsonRpcProvider, Interface } from "ethers";
 import { DexQuote, DexRouter } from "./types";
 
 const SUSHISWAP_V2_ROUTER_ADDRESS = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
-const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // Example, should be dynamic
+const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 const routerAbi = [
     "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
@@ -22,12 +22,9 @@ export class SushiswapV2Router implements DexRouter {
   }
 
   async quoteExactIn(amountIn: string, tokenIn: string, tokenOut: string): Promise<DexQuote> {
-    const amountInWei = parseEther(amountIn); // Assumes 18 decimals
+    const path = [tokenIn, tokenOut];
 
-    const tokenInAddress = tokenIn.toUpperCase() === 'ETH' ? WETH_ADDRESS : tokenIn;
-    const path = [tokenInAddress, tokenOut];
-
-    const amounts = await this.router.getAmountsOut.staticCall(amountInWei, path);
+    const amounts = await this.router.getAmountsOut.staticCall(amountIn, path);
     const amountOut = amounts[1];
 
     // For gas estimation, we use a dummy recipient and a minOut of 0 to prevent reverts
@@ -36,12 +33,12 @@ export class SushiswapV2Router implements DexRouter {
     const gasEstimate = await this.provider.estimateGas({
         to: SUSHISWAP_V2_ROUTER_ADDRESS,
         data: calldata,
-        value: tokenIn.toUpperCase() === 'ETH' ? amountInWei : 0,
+        value: tokenIn === WETH_ADDRESS ? amountIn : 0,
     });
 
     return {
       amountIn,
-      amountOut: formatUnits(amountOut, 18), // Assumes 18 decimals
+      amountOut: amountOut.toString(),
       dex: "SushiswapV2",
       calldata: calldata,
       gasEstimate: gasEstimate,
@@ -49,23 +46,20 @@ export class SushiswapV2Router implements DexRouter {
   }
 
   async buildTx(amountIn: string, minOut: string, recipient: string, tokenIn: string, tokenOut: string): Promise<string> {
-    const amountInWei = parseEther(amountIn);
-    const minOutWei = parseEther(minOut);
-    const tokenInAddress = tokenIn.toUpperCase() === 'ETH' ? WETH_ADDRESS : tokenIn;
-    const path = [tokenInAddress, tokenOut];
+    const path = [tokenIn, tokenOut];
     const deadline = Math.floor(Date.now() / 1000) + 60 * 15; // 15 minutes from now
 
-    if (tokenIn.toUpperCase() === 'ETH') {
+    if (tokenIn === WETH_ADDRESS) {
         return this.routerInterface.encodeFunctionData("swapExactETHForTokens", [
-            minOutWei,
+            minOut,
             path,
             recipient,
             deadline
         ]);
     } else {
         return this.routerInterface.encodeFunctionData("swapExactTokensForTokens", [
-            amountInWei,
-            minOutWei,
+            amountIn,
+            minOut,
             path,
             recipient,
             deadline

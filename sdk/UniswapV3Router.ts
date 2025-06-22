@@ -1,4 +1,4 @@
-import { Contract, JsonRpcProvider, Interface, parseEther, formatUnits } from "ethers";
+import { Contract, JsonRpcProvider, Interface } from "ethers";
 import { DexQuote, DexRouter } from "./types";
 
 const UNISWAP_V3_QUOTER_ADDRESS = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
@@ -27,16 +27,12 @@ export class UniswapV3Router implements DexRouter {
   async quoteExactIn(amountIn: string, tokenIn: string, tokenOut: string): Promise<DexQuote> {
     // For simplicity, we'll use a fixed fee tier. In a real app, this should be determined dynamically.
     const fee = 3000; // 0.3%
-    const amountInWei = parseEther(amountIn); // Assumes 18 decimals for input token
-
-    // If tokenIn is "ETH", we use WETH address
-    const tokenInAddress = tokenIn.toUpperCase() === 'ETH' ? WETH_ADDRESS : tokenIn;
 
     const amountOut = await this.quoter.quoteExactInputSingle.staticCall(
-        tokenInAddress,
+        tokenIn,
         tokenOut,
         fee,
-        amountInWei,
+        amountIn,
         0
     );
 
@@ -46,12 +42,12 @@ export class UniswapV3Router implements DexRouter {
     const gasEstimate = await this.provider.estimateGas({
         to: UNISWAP_V3_ROUTER_ADDRESS,
         data: calldata,
-        value: tokenIn.toUpperCase() === 'ETH' ? amountInWei : 0,
+        value: tokenIn === WETH_ADDRESS ? amountIn : 0,
     });
 
     return {
       amountIn,
-      amountOut: formatUnits(amountOut, 18), // Assumes 18 decimals for output token
+      amountOut: amountOut.toString(),
       dex: "UniswapV3",
       calldata: calldata,
       gasEstimate: gasEstimate,
@@ -59,21 +55,17 @@ export class UniswapV3Router implements DexRouter {
   }
 
   async buildTx(amountIn: string, minOut: string, recipient: string, tokenIn: string, tokenOut: string): Promise<string> {
-    const amountInWei = parseEther(amountIn);
-    const minOutWei = parseEther(minOut);
-    const tokenInAddress = tokenIn.toUpperCase() === 'ETH' ? WETH_ADDRESS : tokenIn;
-
     // Deadline is 15 minutes from now
     const deadline = Math.floor(Date.now() / 1000) + 60 * 15;
 
     const params = {
-      tokenIn: tokenInAddress,
+      tokenIn: tokenIn,
       tokenOut: tokenOut,
       fee: 3000, // 0.3%
       recipient: recipient,
       deadline: deadline,
-      amountIn: amountInWei,
-      amountOutMinimum: minOutWei,
+      amountIn: amountIn,
+      amountOutMinimum: minOut,
       sqrtPriceLimitX96: 0,
     };
 
